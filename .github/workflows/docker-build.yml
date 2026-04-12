@@ -46,6 +46,8 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build with Nix and Push
+        env:
+          DOCKER_METADATA_OUTPUT_TAGS: ${{ steps.meta.outputs.tags }}
         run: |
           # Nix build
           nix build .#default
@@ -54,7 +56,8 @@ jobs:
           docker load < result
           
           # Tag and Push all tags from metadata-action
-          for TAG in ${{ steps.meta.outputs.tags }}; do
+          for TAG in $DOCKER_METADATA_OUTPUT_TAGS; do
+            echo "Pushing tag: $TAG"
             docker tag setup-aarch64-toolchain:latest "$TAG"
             docker push "$TAG"
           done
