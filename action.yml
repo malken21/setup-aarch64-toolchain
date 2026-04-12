@@ -17,9 +17,14 @@ runs:
       shell: bash
       run: |
         if [ -z "${{ inputs.image }}" ]; then
-          # github.action_repository refers to the repository where this action is defined
+          # github.action_repository refers to the repository where this action is defined.
+          # When the action is referenced locally (uses: ./), it may be empty; fall back to github.repository.
+          ACTION_REPO="${{ github.action_repository }}"
+          if [ -z "$ACTION_REPO" ]; then
+            ACTION_REPO="${{ github.repository }}"
+          fi
           # Docker image names must be lowercase
-          REPO_LC=$(echo "${{ github.action_repository }}" | tr '[:upper:]' '[:lower:]')
+          REPO_LC=$(echo "$ACTION_REPO" | tr '[:upper:]' '[:lower:]')
           echo "image=ghcr.io/${REPO_LC}:latest" >> $GITHUB_OUTPUT
         else
           echo "image=${{ inputs.image }}" >> $GITHUB_OUTPUT
