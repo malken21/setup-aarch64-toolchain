@@ -16,37 +16,23 @@ runs:
       id: resolve-image
       shell: bash
       run: |
-        if [ -z "${{ inputs.image }}" ]; then
-          # github.action_repository refers to the repository where this action is defined.
-          # When the action is referenced locally (uses: ./), it may be empty; fall back to github.repository.
-          ACTION_REPO="${{ github.action_repository }}"
-          echo "DEBUG: github.action_repository='$ACTION_REPO'"
-          echo "DEBUG: github.repository='${{ github.repository }}'"
-          echo "DEBUG: github.action_path='${{ github.action_path }}'"
+        IMAGE="${{ inputs.image }}"
+        if [ -z "$IMAGE" ]; then
+          # Determine the repository: prioritize github.action_repository.
+          # Fallback to github.repository, but force official repo if running from its own path.
+          REPO="${{ github.action_repository || github.repository }}"
+          [[ "${{ github.action_path }}" == *"/malken21/setup-aarch64-toolchain"* ]] && REPO="malken21/setup-aarch64-toolchain"
           
-          if [ -z "$ACTION_REPO" ]; then
-            # Fallback to hardcoded name if in the expected path, otherwise uses current repo
-            if [[ "${{ github.action_path }}" == *"/malken21/setup-aarch64-toolchain"* ]]; then
-              ACTION_REPO="malken21/setup-aarch64-toolchain"
-            else
-              ACTION_REPO="${{ github.repository }}"
-            fi
-          fi
-          echo "DEBUG: Resolved ACTION_REPO='$ACTION_REPO'"
-
-          # Docker image names must be lowercase
-          REPO_LC=$(echo "$ACTION_REPO" | tr '[:upper:]' '[:lower:]')
+          # Convert repository name to lowercase for Docker compatibility.
+          REPO_LC=$(echo "$REPO" | tr '[:upper:]' '[:lower:]')
           
-          # Determine image tag based on the action version (ref)
-          ACTION_TAG="${{ github.action_ref }}"
-          if [ -z "$ACTION_TAG" ] || [ "$ACTION_TAG" == "main" ]; then
-            ACTION_TAG="latest"
-          fi
+          # Determine action version (ref). Default to 'latest' for main or local runs.
+          TAG="${{ github.action_ref }}"
+          [[ -z "$TAG" || "$TAG" == "main" ]] && TAG="latest"
           
-          echo "image=ghcr.io/${REPO_LC}:${ACTION_TAG}" >> $GITHUB_OUTPUT
-        else
-          echo "image=${{ inputs.image }}" >> $GITHUB_OUTPUT
+          IMAGE="ghcr.io/${REPO_LC}:${TAG}"
         fi
+        echo "image=$IMAGE" >> $GITHUB_OUTPUT
 
     - name: Generate tool shims
       shell: bash
