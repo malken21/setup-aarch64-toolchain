@@ -1,0 +1,40 @@
+name: Update Major/Minor Release Tags
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  update-tags:
+    runs-on: ubuntu-latest
+    if: "!contains(github.ref, '-')"
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Update major/minor tags
+        run: |
+          # Extract the version from the tag (e.g., v1.2.3)
+          TAG_NAME=${GITHUB_REF_NAME}
+          
+          # Remove 'v' prefix
+          VERSION=${TAG_NAME#v}
+          
+          # Extract major and minor versions
+          MAJOR="v$(echo $VERSION | cut -d. -f1)"
+          MINOR="v$(echo $VERSION | cut -d. -f1,2)"
+          
+          echo "Updating tags: $MAJOR and $MINOR to point to $TAG_NAME"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create or update local tags
+          git tag -f $MAJOR
+          git tag -f $MINOR
+          
+          # Push tags forcibly to remote
+          git push origin $MAJOR --force
+          git push origin $MINOR --force

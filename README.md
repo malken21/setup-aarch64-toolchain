@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Setup AArch64 Toolchain
-        uses: malken21/setup-aarch64-toolchain@main
+        uses: malken21/setup-aarch64-toolchain@v1
 
       - name: Compile AArch64 Assembly
         run: |

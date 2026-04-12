@@ -2,10 +2,8 @@ name: Build and Push Docker Image
 
 on:
   push:
-    paths:
-      - 'flake.nix'
-      - 'scripts/**'
-      - '.github/workflows/docker-build.yml'
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
 
 env:
@@ -49,3 +47,10 @@ jobs:
           # The image name in flake.nix is 'setup-aarch64-toolchain'
           docker tag setup-aarch64-toolchain:latest "$TAG"
           docker push "$TAG"
+          
+          # Push versioned tag if this was triggered by a tag
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+            VERSION_TAG="${{ env.REGISTRY }}/${REPOSITRY_LC}:${{ github.ref_name }}"
+            docker tag setup-aarch64-toolchain:latest "$VERSION_TAG"
+            docker push "$VERSION_TAG"
+          fi
