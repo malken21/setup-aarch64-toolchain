@@ -20,9 +20,20 @@ runs:
           # github.action_repository refers to the repository where this action is defined.
           # When the action is referenced locally (uses: ./), it may be empty; fall back to github.repository.
           ACTION_REPO="${{ github.action_repository }}"
+          echo "DEBUG: github.action_repository='$ACTION_REPO'"
+          echo "DEBUG: github.repository='${{ github.repository }}'"
+          echo "DEBUG: github.action_path='${{ github.action_path }}'"
+          
           if [ -z "$ACTION_REPO" ]; then
-            ACTION_REPO="${{ github.repository }}"
+            # Fallback to hardcoded name if in the expected path, otherwise uses current repo
+            if [[ "${{ github.action_path }}" == *"/malken21/setup-aarch64-toolchain"* ]]; then
+              ACTION_REPO="malken21/setup-aarch64-toolchain"
+            else
+              ACTION_REPO="${{ github.repository }}"
+            fi
           fi
+          echo "DEBUG: Resolved ACTION_REPO='$ACTION_REPO'"
+
           # Docker image names must be lowercase
           REPO_LC=$(echo "$ACTION_REPO" | tr '[:upper:]' '[:lower:]')
           
