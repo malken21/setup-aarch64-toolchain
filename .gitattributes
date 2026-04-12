@@ -1,0 +1,12 @@
+# Ensure shell scripts always use LF line endings (required for Linux execution)
+*.sh text eol=lf
+
+# Nix files use LF
+*.nix text eol=lf
+
+# YAML files use LF
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Default: auto-detect text files
+* text=auto

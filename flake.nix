@@ -36,7 +36,7 @@
         config = {
           Cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
           Env = [
-            "PATH=/bin"
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
             "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
           ];
           WorkingDir = "/workspace";
@@ -58,7 +58,7 @@
         config = {
           Cmd = [ "${aarch64Pkgs.bashInteractive}/bin/bash" ];
           Env = [
-            "PATH=/bin"
+            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
             "SSL_CERT_FILE=${aarch64Pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
           ];
           WorkingDir = "/workspace";

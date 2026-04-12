@@ -1,6 +1,9 @@
 name: 'AArch64 Toolchain Setup'
 description: 'Sets up AArch64 development tools (as, ld) on an AArch64 host runner using Docker shims'
 author: 'malken21'
+branding:
+  icon: 'cpu'
+  color: 'orange'
 inputs:
   image:
     description: 'The Docker image to use for the toolchain'

@@ -1,0 +1,56 @@
+name: Test Action
+
+on:
+  push:
+    paths:
+      - 'action.yml'
+      - 'scripts/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    paths:
+      - 'action.yml'
+      - 'scripts/**'
+      - '.github/workflows/test.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test AArch64 Toolchain Setup
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup AArch64 Toolchain
+        uses: ./
+
+      - name: Verify toolchain tools are available
+        run: |
+          echo "=== Verifying tool availability ==="
+          which as
+          which ld
+          which nm
+          which objcopy
+          which objdump
+          which readelf
+          which size
+          which strip
+          which ar
+          which ranlib
+          echo "=== All tools found ==="
+
+      - name: Test assembly compilation
+        run: |
+          # Minimal AArch64 assembly to test as and ld
+          cat > test.s << 'EOF'
+          .global _start
+          .text
+          _start:
+            mov x8, #93      // exit syscall
+            mov x0, #0       // exit code 0
+            svc #0
+          EOF
+          as -o test.o test.s
+          ld -o test test.o
+          echo "Assembly compilation succeeded."
+          file test
