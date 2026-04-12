@@ -31,39 +31,32 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+            type=raw,value=latest,enable={{github.ref == format('refs/heads/{0}', github.event.repository.default_branch)}}
+
+      - name: Build with Nix and Push
         run: |
-          REPOSITRY_LC=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
-          TAG="${{ env.REGISTRY }}/${REPOSITRY_LC}:latest"
-          
-          # Build Docker image using Nix
+          # Nix build
           nix build .#default
           
-          # Load the image into Docker daemon
-          # Note: buildLayeredImage produces a tarball
+          # Load the image (it has name 'setup-aarch64-toolchain:latest' as defined in flake.nix)
           docker load < result
           
-          # Tag and push
-          # The image name in flake.nix is 'setup-aarch64-toolchain'
-          docker tag setup-aarch64-toolchain:latest "$TAG"
-          docker push "$TAG"
-          
-          # Push versioned tag if this was triggered by a tag
-          if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
-            VERSION_TAG="${{ env.REGISTRY }}/${REPOSITRY_LC}:${{ github.ref_name }}"
-            docker tag setup-aarch64-toolchain:latest "$VERSION_TAG"
-            docker push "$VERSION_TAG"
-            
-            # Extract major and minor versions (e.g., v1, v1.1 from v1.1.0)
-            VERSION=${{ github.ref_name }}
-            # Remove 'v' prefix for processing
-            V_NUM=${VERSION#v}
-            MAJOR="v$(echo $V_NUM | cut -d. -f1)"
-            MINOR="v$(echo $V_NUM | cut -d. -f1,2)"
-            
-            echo "Pushing additional tags: $MAJOR, $MINOR"
-            for T in "$MAJOR" "$MINOR"; do
-              docker tag setup-aarch64-toolchain:latest "${{ env.REGISTRY }}/${REPOSITRY_LC}:$T"
-              docker push "${{ env.REGISTRY }}/${REPOSITRY_LC}:$T"
-            done
-          fi
+          # Tag and Push all tags from metadata-action
+          for TAG in ${{ steps.meta.outputs.tags }}; do
+            docker tag setup-aarch64-toolchain:latest "$TAG"
+            docker push "$TAG"
+          done
+
+
