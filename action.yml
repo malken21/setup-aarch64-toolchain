@@ -1,0 +1,18 @@
+name: 'AArch64 Toolchain Setup'
+description: 'Sets up AArch64 development tools (as, ld) on the host runner using Docker shims'
+author: 'malken21'
+inputs:
+  image:
+    description: 'The Docker image to use for the toolchain'
+    required: false
+    default: 'ghcr.io/malken21/setup-aarch64-toolchain-nix:latest'
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate tool shims
+      shell: bash
+      run: |
+        SHIM_DIR="${{ github.workspace }}/.aarch64-toolchain-shims"
+        bash "${{ github.action_path }}/scripts/setup-shims.sh" "${{ inputs.image }}" "$SHIM_DIR"
+        echo "Adding $SHIM_DIR to PATH"
+        echo "$SHIM_DIR" >> $GITHUB_PATH
