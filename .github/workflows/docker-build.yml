@@ -53,4 +53,17 @@ jobs:
             VERSION_TAG="${{ env.REGISTRY }}/${REPOSITRY_LC}:${{ github.ref_name }}"
             docker tag setup-aarch64-toolchain:latest "$VERSION_TAG"
             docker push "$VERSION_TAG"
+            
+            # Extract major and minor versions (e.g., v1, v1.1 from v1.1.0)
+            VERSION=${{ github.ref_name }}
+            # Remove 'v' prefix for processing
+            V_NUM=${VERSION#v}
+            MAJOR="v$(echo $V_NUM | cut -d. -f1)"
+            MINOR="v$(echo $V_NUM | cut -d. -f1,2)"
+            
+            echo "Pushing additional tags: $MAJOR, $MINOR"
+            for T in "$MAJOR" "$MINOR"; do
+              docker tag setup-aarch64-toolchain:latest "${{ env.REGISTRY }}/${REPOSITRY_LC}:$T"
+              docker push "${{ env.REGISTRY }}/${REPOSITRY_LC}:$T"
+            done
           fi
