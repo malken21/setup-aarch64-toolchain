@@ -22,7 +22,7 @@ jobs:
       - name: Setup AArch64 Toolchain
         uses: malken21/setup-aarch64-toolchain@v1
 
-      - name: Compile AArch64 Assembly
+      - name: Assemble and Link AArch64 Assembly
         run: |
           as -o main.o main.s
           ld -o main main.o
