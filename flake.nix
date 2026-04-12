@@ -22,7 +22,7 @@
     in
     {
       packages.x86_64-linux.default = pkgs.dockerTools.buildLayeredImage {
-        name = "setup-aarch64-toolchain-nix";
+        name = "setup-aarch64-toolchain";
         tag = "latest";
         
         # Tools to include in the root
@@ -45,7 +45,7 @@
 
       # Allow native build if on aarch64
       packages.aarch64-linux.default = aarch64Pkgs.dockerTools.buildLayeredImage {
-        name = "setup-aarch64-toolchain-nix";
+        name = "setup-aarch64-toolchain";
         tag = "latest";
         
         contents = with aarch64Pkgs; [

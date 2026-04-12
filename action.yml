@@ -1,18 +1,31 @@
 name: 'AArch64 Toolchain Setup'
-description: 'Sets up AArch64 development tools (as, ld) on the host runner using Docker shims'
+description: 'Sets up AArch64 development tools (as, ld) on an AArch64 host runner using Docker shims'
 author: 'malken21'
 inputs:
   image:
     description: 'The Docker image to use for the toolchain'
     required: false
-    default: 'ghcr.io/malken21/setup-aarch64-toolchain-nix:latest'
+    default: ''
 runs:
   using: 'composite'
   steps:
+    - name: Resolve Docker image name
+      id: resolve-image
+      shell: bash
+      run: |
+        if [ -z "${{ inputs.image }}" ]; then
+          # github.action_repository refers to the repository where this action is defined
+          # Docker image names must be lowercase
+          REPO_LC=$(echo "${{ github.action_repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=ghcr.io/${REPO_LC}:latest" >> $GITHUB_OUTPUT
+        else
+          echo "image=${{ inputs.image }}" >> $GITHUB_OUTPUT
+        fi
+
     - name: Generate tool shims
       shell: bash
       run: |
         SHIM_DIR="${{ github.workspace }}/.aarch64-toolchain-shims"
-        bash "${{ github.action_path }}/scripts/setup-shims.sh" "${{ inputs.image }}" "$SHIM_DIR"
+        bash "${{ github.action_path }}/scripts/setup-shims.sh" "${{ steps.resolve-image.outputs.image }}" "$SHIM_DIR"
         echo "Adding $SHIM_DIR to PATH"
         echo "$SHIM_DIR" >> $GITHUB_PATH
