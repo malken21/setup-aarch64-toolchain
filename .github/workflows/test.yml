@@ -39,7 +39,7 @@ jobs:
           which ranlib
           echo "=== All tools found ==="
 
-      - name: Test assembly compilation
+      - name: Test assembly and linking
         run: |
           # Minimal AArch64 assembly to test as and ld
           cat > test.s << 'EOF'
@@ -52,5 +52,5 @@ jobs:
           EOF
           as -o test.o test.s
           ld -o test test.o
-          echo "Assembly compilation succeeded."
+          echo "Assembly and linking succeeded."
           file test
