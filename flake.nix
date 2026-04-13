@@ -2,67 +2,67 @@
   description = "Minimal AArch64 GitHub Actions runner image built with Nix";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
-  outputs = { self, nixpkgs }:
-    let
-      # Define the target architecture (cross-compilation target)
-      targetSystem = "aarch64-linux";
-      
-      # Build on x86_64-linux but targeting aarch64-linux
-      pkgs = import nixpkgs {
-        system = "x86_64-linux";
-        crossSystem = {
-          config = "aarch64-unknown-linux-gnu";
+  outputs = inputs@{ nixpkgs, flake-parts, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
+
+      perSystem =
+        {
+          config,
+          pkgs,
+          system,
+          ...
+        }:
+        let
+          # Helper to build the image (native or cross)
+          buildImage =
+            p:
+            p.dockerTools.buildLayeredImage {
+              name = "setup-aarch64-toolchain";
+              tag = "latest";
+
+              contents = with p; [
+                binutils
+                coreutils
+                bashInteractive
+                cacert
+              ];
+
+              config = {
+                Cmd = [ "${p.bashInteractive}/bin/bash" ];
+                Env = [
+                  "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                  "SSL_CERT_FILE=${p.cacert}/etc/ssl/certs/ca-bundle.crt"
+                ];
+                WorkingDir = "/workspace";
+              };
+            };
+
+          # Cross-pkgs for x86_64-linux targeting aarch64
+          # If building on aarch64-linux, use native pkgs.
+          targetPkgs = if system == "x86_64-linux" then pkgs.pkgsCross.aarch64-multiplatform else pkgs;
+        in
+        {
+          # Default package is the AArch64 image
+          packages.default = buildImage targetPkgs;
+
+          # Formatter for nix files (Nix RFC 166 style)
+          formatter = pkgs.nixfmt-rfc-style;
+
+          # Dev shell containing tools for local testing/development
+          devShells.default = pkgs.mkShell {
+            packages = with targetPkgs; [
+              binutils
+              coreutils
+            ];
+          };
         };
-      };
-
-      aarch64Pkgs = import nixpkgs { system = targetSystem; };
-    in
-    {
-      packages.x86_64-linux.default = pkgs.dockerTools.buildLayeredImage {
-        name = "setup-aarch64-toolchain";
-        tag = "latest";
-        
-        # Tools to include in the root
-        contents = with pkgs; [
-          binutils
-          coreutils
-          bashInteractive
-          cacert
-        ];
-
-        config = {
-          Cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
-          Env = [
-            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-            "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-          ];
-          WorkingDir = "/workspace";
-        };
-      };
-
-      # Allow native build if on aarch64
-      packages.aarch64-linux.default = aarch64Pkgs.dockerTools.buildLayeredImage {
-        name = "setup-aarch64-toolchain";
-        tag = "latest";
-        
-        contents = with aarch64Pkgs; [
-          binutils
-          coreutils
-          bashInteractive
-          cacert
-        ];
-
-        config = {
-          Cmd = [ "${aarch64Pkgs.bashInteractive}/bin/bash" ];
-          Env = [
-            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-            "SSL_CERT_FILE=${aarch64Pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-          ];
-          WorkingDir = "/workspace";
-        };
-      };
     };
 }
